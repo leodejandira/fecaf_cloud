@@ -2,7 +2,7 @@
 
 MVP da plataforma de pedidos da Loja Veloz em microsserviços, com ambiente local em Docker Compose, deploy em Kubernetes, pipeline no GitHub Actions, observabilidade com OpenTelemetry/Prometheus/Jaeger e infraestrutura em Terraform.
 
-Vídeo de apresentação: LINK_DO_VIDEO
+Vídeo de apresentação: https://www.youtube.com/watch?v=2cZn9yiA6yM
 
 ## Arquitetura
 

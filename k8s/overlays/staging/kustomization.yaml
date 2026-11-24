@@ -1,0 +1,71 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: pedidos-veloz
+
+resources:
+  - ../../base
+  - postgres.yaml
+  - jaeger.yaml
+
+configMapGenerator:
+  - name: pedidos-veloz-config
+    behavior: merge
+    literals:
+      - APP_ENV=staging
+      - LOG_LEVEL=DEBUG
+      - SEED_DATA=true
+      - TRACES_ENDPOINT=jaeger:4317
+      - SAMPLING_PERCENTAGE=100
+
+secretGenerator:
+  - name: pedidos-veloz-secrets
+    envs:
+      - secrets.env
+  - name: postgres-secrets
+    envs:
+      - postgres.env
+
+patches:
+  - target:
+      kind: HorizontalPodAutoscaler
+    patch: |-
+      - op: replace
+        path: /spec/minReplicas
+        value: 1
+  - target:
+      kind: Deployment
+      labelSelector: app in (gateway,pedidos,pagamentos,estoque)
+    patch: |-
+      - op: replace
+        path: /spec/replicas
+        value: 1
+  - target:
+      kind: PodDisruptionBudget
+    patch: |-
+      - op: remove
+        path: /spec/minAvailable
+      - op: add
+        path: /spec/maxUnavailable
+        value: 1
+  - target:
+      kind: Ingress
+      name: gateway
+    patch: |-
+      - op: replace
+        path: /spec/rules/0/host
+        value: staging.api.lojaveloz.local
+
+images:
+  - name: pedidos-veloz/gateway
+    newName: ghcr.io/OWNER/pedidos-veloz-gateway
+    newTag: latest-main
+  - name: pedidos-veloz/pedidos
+    newName: ghcr.io/OWNER/pedidos-veloz-pedidos
+    newTag: latest-main
+  - name: pedidos-veloz/pagamentos
+    newName: ghcr.io/OWNER/pedidos-veloz-pagamentos
+    newTag: latest-main
+  - name: pedidos-veloz/estoque
+    newName: ghcr.io/OWNER/pedidos-veloz-estoque
+    newTag: latest-main

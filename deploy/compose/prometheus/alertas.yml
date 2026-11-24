@@ -1,0 +1,29 @@
+groups:
+  - name: pedidos-veloz
+    rules:
+      - alert: TaxaDeErro5xxAlta
+        expr: |
+          sum by (service) (rate(http_requests_total{status=~"5.."}[5m]))
+            / sum by (service) (rate(http_requests_total[5m])) > 0.05
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "{{ $labels.service }} com mais de 5% de respostas 5xx"
+
+      - alert: LatenciaP95Alta
+        expr: |
+          histogram_quantile(0.95, sum by (le, service) (rate(http_request_duration_seconds_bucket[5m]))) > 0.8
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "p95 de {{ $labels.service }} acima de 800ms"
+
+      - alert: ServicoFora
+        expr: up{job="pedidos-veloz"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "{{ $labels.app }} nao responde ao scrape"

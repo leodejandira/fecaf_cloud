@@ -1,0 +1,65 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: pedidos-veloz
+
+resources:
+  - ../../base
+
+configMapGenerator:
+  - name: pedidos-veloz-config
+    behavior: merge
+    literals:
+      - APP_ENV=production
+      - PROVEDOR_URL=https://api.psp-parceiro.com.br/v1
+      - DB_POOL_MAX=20
+
+secretGenerator:
+  - name: pedidos-veloz-secrets
+    envs:
+      - secrets.env
+
+patches:
+  - target:
+      kind: HorizontalPodAutoscaler
+      name: gateway|pedidos
+    patch: |-
+      - op: replace
+        path: /spec/minReplicas
+        value: 3
+  - target:
+      kind: Deployment
+      name: gateway|pedidos
+    patch: |-
+      - op: replace
+        path: /spec/replicas
+        value: 3
+  - target:
+      kind: Ingress
+      name: gateway
+    patch: |-
+      - op: replace
+        path: /spec/rules/0/host
+        value: api.lojaveloz.com.br
+      - op: add
+        path: /metadata/annotations/cert-manager.io~1cluster-issuer
+        value: letsencrypt
+      - op: add
+        path: /spec/tls
+        value:
+          - hosts: ["api.lojaveloz.com.br"]
+            secretName: api-lojaveloz-tls
+
+images:
+  - name: pedidos-veloz/gateway
+    newName: ghcr.io/OWNER/pedidos-veloz-gateway
+    newTag: 1.0.0
+  - name: pedidos-veloz/pedidos
+    newName: ghcr.io/OWNER/pedidos-veloz-pedidos
+    newTag: 1.0.0
+  - name: pedidos-veloz/pagamentos
+    newName: ghcr.io/OWNER/pedidos-veloz-pagamentos
+    newTag: 1.0.0
+  - name: pedidos-veloz/estoque
+    newName: ghcr.io/OWNER/pedidos-veloz-estoque
+    newTag: 1.0.0

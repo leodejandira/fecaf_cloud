@@ -1,0 +1,39 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: pedidos-veloz
+
+labels:
+  - pairs:
+      app.kubernetes.io/part-of: pedidos-veloz
+    includeSelectors: false
+
+resources:
+  - namespace.yaml
+  - gateway.yaml
+  - pedidos.yaml
+  - pagamentos.yaml
+  - estoque.yaml
+  - otel-collector.yaml
+  - hpa.yaml
+  - pdb.yaml
+  - networkpolicy.yaml
+  - ingress.yaml
+
+configMapGenerator:
+  - name: pedidos-veloz-config
+    literals:
+      - APP_ENV=production
+      - LOG_LEVEL=INFO
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4318
+      - PEDIDOS_URL=http://pedidos:8000
+      - ESTOQUE_URL=http://estoque:8000
+      - PAGAMENTOS_URL=http://pagamentos:8000
+      - HTTP_TIMEOUT_SECONDS=3
+      - DB_POOL_MAX=10
+      - LIMITE_APROVACAO=5000
+      - LATENCIA_SIMULADA_MS=120
+      - PROVEDOR_URL=
+      - SEED_DATA=false
+      - TRACES_ENDPOINT=jaeger-collector.observabilidade:4317
+      - SAMPLING_PERCENTAGE=10
